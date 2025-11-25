@@ -2,8 +2,8 @@ require('dotenv').config();
 
 const express = require('express')
 const pool = require('./db');
-const route = express()
-route.use(express.json())
+const route = express();
+route.use(express.json());
 const port = process.env.port || 3000;
 
 const valores = []
@@ -38,11 +38,30 @@ route.post('/usuarios', async (req, res)=>{
 })
 
 route.get('/usuarios', async (req, res)=>{
-    try{
-        const [rows] = await pool.query('SELECT * FROM usuarios');
-        res.json(rows)
+    try {
+        const { id, nome } = req.query;
+        let query = 'SELECT * FROM usuarios';
+        const params = [];
+
+        if (id || nome) {
+            query += ' WHERE ';
+            const construcao_query = [];
+            if (id) {
+                construcao_query.push('id = ?');
+                params.push(id);
+            }
+            if (nome) {
+                // buscas parciais no nomeeeee
+                construcao_query.push('nome LIKE ?');
+                params.push(`%${nome}%`);
+            }
+            query += construcao_query.join(' AND ');
+        }
+
+        const [rows] = await pool.query(query, params);
+        res.json(rows);
     } catch (error) {
-        console.error('Erro ao buscar usuários no banco de dados:', error);
+        console.error('Erro ao buscar usuários:', error);
         res.status(500).json({ error: 'Ocorreu um erro ao buscar os usuários.' });
     }
 })
