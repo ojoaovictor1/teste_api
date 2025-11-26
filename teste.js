@@ -1,7 +1,11 @@
 require('dotenv').config(); 
+require('./src/models/Desenvolvedores');
+require('./src/models/Usuario');
+const Desenvolvedores = require('./src/controller/Desenvolvedores');
+const Usuario = require('./src/controller/Usuario');
 
 const express = require('express')
-const pool = require('./db');
+const pool = require('./src/db/db');
 const route = express();
 route.use(express.json());
 const port = process.env.port || 3000;
@@ -38,30 +42,50 @@ route.post('/usuarios', async (req, res)=>{
 })
 
 route.get('/usuarios', async (req, res)=>{
-    try {
-        const { id, nome } = req.query;
-        let query = 'SELECT * FROM usuarios';
-        const params = [];
+    // try {
+    //     const { id, nome } = req.query;
+    //     let query = 'SELECT * FROM usuarios';
+    //     const params = [];
 
-        if (id || nome) {
-            query += ' WHERE ';
-            const construcao_query = [];
-            if (id) {
-                construcao_query.push('id = ?');
-                params.push(id);
-            }
-            if (nome) {
-                // buscas parciais no nomeeeee
-                construcao_query.push('nome LIKE ?');
-                params.push(`%${nome}%`);
-            }
-            query += construcao_query.join(' AND ');
+    //     if (id || nome) {
+    //         query += ' WHERE ';
+    //         const construcao_query = [];
+    //         if (id) {
+    //             construcao_query.push('id = ?');
+    //             params.push(id);
+    //         }
+    //         if (nome) {
+    //             // buscas parciais no nomeeeee
+    //             construcao_query.push('nome LIKE ?');
+    //             params.push(`%${nome}%`);
+    //         }
+    //         query += construcao_query.join(' AND ');
+    //     }
+
+    //     const [rows] = await pool.query(query, params);
+    //     res.json(rows);
+    // } catch (error) {
+    //     console.error('Erro ao buscar usuários:', error);
+    //     res.status(500).json({ error: 'Ocorreu um erro ao buscar os usuários.' });
+    // }
+    try {
+        const { id, nome} = req.query;
+        console.log("Recebi isso: ", {id, nome});
+        const where = {};
+
+        if(id){
+            where.id = id
+        };
+
+        if(nome){
+            where.nome = {[Op.like]: `%${nome}%`};
         }
 
-        const [rows] = await pool.query(query, params);
-        res.json(rows);
+        const usuarios = await findAll({where});
+        res.json(usuarios);
+
     } catch (error) {
-        console.error('Erro ao buscar usuários:', error);
+        console.log('Erro ao buscar usuários:', error);
         res.status(500).json({ error: 'Ocorreu um erro ao buscar os usuários.' });
     }
 })
@@ -75,5 +99,8 @@ route.post('/enviando', (req, res) =>{
 route.get('/enviando', (req, res)=>{
     res.json(valores)
 })
+
+route.post('/desenvolvedores', Desenvolvedores.Cadastrar)
+route.get('/desenvolvedores', Desenvolvedores.Listar)
 
 route.listen(port, ()=>{console.log('Servidor rodando')})
